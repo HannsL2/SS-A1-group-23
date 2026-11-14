@@ -45,6 +45,8 @@ void parse_command(char line[], char *args[], int *argsc)
 ///Launch related functions
 void child(char *args[], int argsc)
 {
+    execvp(args[ARG_PROGNAME], args);
+    perror("execvp");
     ///Implement this function:
 
     ///Use execvp to load the binary 
@@ -54,14 +56,22 @@ void child(char *args[], int argsc)
 
 void launch_program(char *args[], int argsc)
 {
-    ///Implement this function:
+    if (argsc == 0) {
+        return;
+    }
+    if (strcmp(args[ARG_PROGNAME], "exit") == 0) {
+        exit(0);
+    }
+    pid_t pid = fork();
 
-    ///fork() a child process.
-    ///In the child part of the code,
-    ///call child(args, argv)
-    ///For reference, see the code in lecture 2.
-
-    ///Handle the 'exit' command;
-    ///so that the shell, not the child process,
-    ///exits.
+    if (pid == 0) {
+        child(args, argsc);
+        exit(1);
+    }
+    else if (pid > 0) {
+        reap();
+    }
+    else {
+        perror("fork");
+    }
 }

@@ -47,11 +47,6 @@ void child(char *args[], int argsc)
 {
     execvp(args[ARG_PROGNAME], args);
     perror("execvp");
-    ///Implement this function:
-
-    ///Use execvp to load the binary 
-    ///of the command specified in args[ARG_PROGNAME].
-    ///For reference, see the code in lecture 3.
 }
 
 void launch_program(char *args[], int argsc)
@@ -68,10 +63,88 @@ void launch_program(char *args[], int argsc)
         child(args, argsc);
         exit(1);
     }
-    else if (pid > 0) {
-        reap();
-    }
-    else {
+    else if (pid < 0){
         perror("fork");
     }
+}
+
+void launch_program_with_redirection(char *args[], int argsc) {
+    if (argsc == 0) {
+        return;
+    }
+    if (strcmp(args[ARG_PROGNAME], "exit") == 0) {
+        exit(0);
+    }
+
+    int op_index = find_redirection_operator(args, argsc);
+    if (op_index == -1 || op_index + 1 >= argsc) {
+        fprintf(stderr, "s3: syntax error near redirection symbol\n");
+        return;
+    }
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        if (strcmp(args[op_index], "<") == 0) {
+            child_with_input_redirected(args, argsc, op_index);
+        }
+        else {
+            child_with_output_redirected(args, argsc, op_index);
+        }
+        exit(1);
+    }
+    else if (pid < 0){
+        perror("fork");
+    }
+}
+
+bool command_with_redirection(char line[]){
+    return strchr(line, '<') != NULL || strchr(line, '>') != NULL;
+}
+
+int find_redirection_operator(char *args[], int argsc) {
+    for (int i = 0; i < argsc; i++) {
+        if (strcmp(args[i], "<") == 0 || strcmp(args[i], ">>") == 0 || strcmp(args[i], ">") == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void child_with_output_redirected(char *args[], int argsc, int op_index) {
+    int flags;
+    if (strcmp(args[op_index], ">>") == 0){
+        flags = O_WRONLY | O_CREAT | O_APPEND;
+    }
+    else {
+        flags = O_WRONLY | O_CREAT | O_TRUNC;
+    }
+
+    int fd = open(args[op_index + 1], flags, 0644);
+    if (fd < 0) {
+        perror("open");
+        exit(1);
+    }
+
+    dup2(fd, STDOUT_FILENO);
+    close(fd);
+
+    args[op_index] = NULL;
+    child(args, argsc);
+}
+
+void child_with_input_redirected(char *args[], int argsc, int op_index) {
+    int flags = O_RDONLY;
+
+    int fd = open(args[op_index + 1], flags);
+    if (fd < 0) {
+        perror("open");
+        exit(1);
+    }   
+
+    dup2(fd, STDIN_FILENO);
+    close(fd);
+
+    args[op_index] = NULL;
+    child(args, argsc);
 }

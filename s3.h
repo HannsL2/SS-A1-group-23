@@ -7,6 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -44,4 +45,9 @@ void child(char *args[], int argsc);
 
 ///Program launching functions (add more as appropriate)
 void launch_program(char *args[], int argsc);
+void launch_program_with_redirection(char *args[], int argsc);
+bool command_with_redirection(char line[]);
+int find_redirection_operator(char *args[], int argsc);
+void child_with_output_redirected(char *args[], int argsc, int op_index);
+void child_with_input_redirected(char *args[], int argsc, int op_index);
 #endif

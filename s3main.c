@@ -15,9 +15,16 @@ int main(int argc, char *argv[]){
     while (1) {
         read_command_line(line);
 
+        int redirection = command_with_redirection(line);
+
         parse_command(line, args, &argsc);
 
-        launch_program(args, argsc); 
+        if (redirection){
+            launch_program_with_redirection(args, argsc); 
+        }
+        else {
+            launch_program(args, argsc);
+        }
 
         reap();
     }
